@@ -797,6 +797,7 @@ int main(int argc, char **argv){
    std::string camera_info_topic;
    std::string start_capture_srv;
    std::string stop_capture_srv;
+   bool start_capturing = false;
 
    /* ---< Load Parameters >--- */
    n.param<std::string>("/raspicam/published_topics/image_topic", image_topic, \
@@ -807,6 +808,8 @@ int main(int argc, char **argv){
      start_capture_srv, "/raspicam/start_capture" );
    n.param<std::string>("/raspicam/advertised_services/stop_capture", \
      stop_capture_srv, "/raspicam/stop_capture" );
+   n.param<bool>("/raspicam/start_capturing", \
+     start_capturing, true );
    /* ------------------------- */
 
    if(!c_info_man.loadCameraInfo ("package://raspicam/calibrations/camera.yaml")){
@@ -823,8 +826,12 @@ int main(int argc, char **argv){
    ros::ServiceServer start_cam = n.advertiseService(start_capture_srv, serv_start_cap);
    ros::ServiceServer stop_cam = n.advertiseService(stop_capture_srv, serv_stop_cap);
    
-   // *** Start capturing on init ***
-   start_capture(&state_srv);
+   if (start_capturing == true)
+   {
+     ROS_INFO("Initiating frame capturing");
+     // *** Start capturing on init ***
+     start_capture(&state_srv);
+   }
 
    ros::spin();
    close_cam(&state_srv);
