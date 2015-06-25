@@ -793,6 +793,22 @@ int main(int argc, char **argv){
    camera_info_manager::CameraInfoManager c_info_man (n, "camera", "package://raspicam/calibrations/camera.yaml");
    get_status(&state_srv);
 
+   std::string image_topic;
+   std::string camera_info_topic;
+   std::string start_capture_srv;
+   std::string stop_capture_srv;
+
+   /* ---< Load Parameters >--- */
+   n.param<std::string>("/raspicam/published_topics/image_topic", image_topic, \
+     "/raspicam/image/compressed" );
+   n.param<std::string>("/raspicam/published_topics/camera_info_topic", \
+     camera_info_topic, "/raspicam/camera_info" );
+   n.param<std::string>("/raspicam/advertised_services/start_capture", \
+     start_capture_srv, "/raspicam/start_capture" );
+   n.param<std::string>("/raspicam/advertised_services/stop_capture", \
+     stop_capture_srv, "/raspicam/stop_capture" );
+   /* ------------------------- */
+
    if(!c_info_man.loadCameraInfo ("package://raspicam/calibrations/camera.yaml")){
 	ROS_INFO("Calibration file missing. Camera not calibrated");
    }
@@ -801,10 +817,15 @@ int main(int argc, char **argv){
    	c_info = c_info_man.getCameraInfo ();
 	ROS_INFO("Camera successfully calibrated");
    }
-   image_pub = n.advertise<sensor_msgs::CompressedImage>("camera/image/compressed", 1);
-   camera_info_pub = n.advertise<sensor_msgs::CameraInfo>("camera/camera_info", 1);
-   ros::ServiceServer start_cam = n.advertiseService("camera/start_capture", serv_start_cap);
-   ros::ServiceServer stop_cam = n.advertiseService("camera/stop_capture", serv_stop_cap);
+
+   image_pub = n.advertise<sensor_msgs::CompressedImage>(image_topic, 1);
+   camera_info_pub = n.advertise<sensor_msgs::CameraInfo>(camera_info_topic, 1);
+   ros::ServiceServer start_cam = n.advertiseService(start_capture_srv, serv_start_cap);
+   ros::ServiceServer stop_cam = n.advertiseService(stop_capture_srv, serv_stop_cap);
+   
+   // *** Start capturing on init ***
+   start_capture(&state_srv);
+
    ros::spin();
    close_cam(&state_srv);
    return 0;
